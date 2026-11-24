@@ -1,0 +1,73 @@
+name: Archive
+
+# Once a day, keep the file of mobile phone base stations that OFCOM publishes.
+# OFCOM replaces its file every evening, around 22:00 UTC, and keeps no history.
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+# One run at a time: two runs would try to push the same snapshot.
+concurrency:
+  group: archive
+  cancel-in-progress: false
+
+permissions:
+  # Commit the snapshot and attach the original file to a release.
+  contents: write
+
+jobs:
+  archive:
+    name: archive
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch and rewrite the published file
+        id: fetch
+        env:
+          RAW_DIR: ${{ runner.temp }}/raw
+        run: ./scripts/archive.sh
+
+      # The original goes to a release, one per year, so the git history only
+      # holds the comparable form.
+      - name: Keep the original file
+        if: steps.fetch.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RAW_FILE: ${{ steps.fetch.outputs.raw_file }}
+          PUBLISHED: ${{ steps.fetch.outputs.published }}
+        run: |
+          year="${PUBLISHED%%-*}"
+          release="raw-${year}"
+          gh release view "$release" >/dev/null 2>&1 ||
+            gh release create "$release" --title "Original files, ${year}" \
+              --notes "The files exactly as OFCOM published them, gzipped, one per publication day. Source: Federal Office of Communications OFCOM."
+          gh release upload "$release" "$RAW_FILE" --clobber
+
+      - name: Commit the snapshot
+        if: steps.fetch.outputs.changed == 'true'
+        env:
+          PUBLISHED: ${{ steps.fetch.outputs.published }}
+          SITES: ${{ steps.fetch.outputs.sites }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ofcom
+          git commit -m "data: mobile stations published ${PUBLISHED} (${SITES} sites)"
+          git push
+
+      # The snapshot is archived whatever it contains. A sudden drop still
+      # deserves a look, so it fails the run after the commit.
+      - name: Flag a suspicious drop
+        if: steps.fetch.outputs.changed == 'true'
+        env:
+          SITES: ${{ steps.fetch.outputs.sites }}
+          PREVIOUS: ${{ steps.fetch.outputs.previous_sites }}
+        run: |
+          if [ "$PREVIOUS" -gt 0 ] && [ "$SITES" -lt $((PREVIOUS / 2)) ]; then
+            echo "::error::The file went from ${PREVIOUS} to ${SITES} sites. It is archived; check the source."
+            exit 1
+          fi
