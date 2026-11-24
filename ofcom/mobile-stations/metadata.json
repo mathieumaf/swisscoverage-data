@@ -1,0 +1,22 @@
+{
+  "data_date": "2026-11-22T00:00:00Z",
+  "header": {
+    "crs": {
+      "properties": {
+        "name": "EPSG:2056"
+      },
+      "type": "name"
+    },
+    "name": "ch.bakom.mobil-antennenstandorte",
+    "type": "FeatureCollection"
+  },
+  "published": "2026-11-23T22:01:35.611529Z",
+  "sha256": "f57bc656c5fe7885895f16cb4a7369ae1b8480520d5078b9c253f0122aeda6cc",
+  "sites": 22777,
+  "source": {
+    "collection": "ch.bakom.standorte-mobilfunkanlagen",
+    "href": "https://data.geo.admin.ch/ch.bakom.standorte-mobilfunkanlagen/standorte-mobilfunkanlagen/standorte-mobilfunkanlagen_2056.json",
+    "publisher": "Federal Office of Communications OFCOM",
+    "terms": "https://opendata.swiss/en/terms-of-use/#terms_by"
+  }
+}
