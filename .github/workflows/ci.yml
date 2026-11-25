@@ -1,0 +1,36 @@
+name: CI
+
+# Checks a change to the scripts and the workflows before it is merged.
+# `./scripts/check.sh` runs the same thing locally.
+#
+# The daily commits of the archive do not start this workflow: a push made
+# with the workflow token starts no other workflow.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same pull request. A run on main is never
+# cancelled once it has started.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # The list of snapshots is rebuilt from the whole history.
+          fetch-depth: 0
+
+      - name: Check
+        run: ./scripts/check.sh

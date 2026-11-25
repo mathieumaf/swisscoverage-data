@@ -20,6 +20,7 @@ ofcom/mobile-stations/
   snapshots.ndjson  The list of every version archived, oldest first
 scripts/archive.sh  The script that produces the first two
 scripts/index.sh    The script that produces the list
+scripts/check.sh    Checks a change to the scripts and the workflows
 ```
 
 **One commit is one published version.** The history of `stations.ndjson` is
@@ -63,9 +64,9 @@ anyone we know of.
 A scheduled workflow runs `scripts/archive.sh` three times a day. The script
 asks OFCOM's catalogue which file is published, downloads it once, verifies
 its checksum, and rewrites it. When the published file is the one already
-archived, nothing is committed. OFCOM publishes once a day; the other runs are
-there because scheduled runs can start hours late, and a file replaced before
-it was archived is lost.
+archived, no snapshot is committed. OFCOM publishes once a day; the other
+runs are there because scheduled runs can start hours late, and a file
+replaced before it was archived is lost.
 
 `scripts/index.sh` then rebuilds `snapshots.ndjson` from the history of
 `metadata.json`, so the list cannot drift from what was archived.
@@ -76,6 +77,17 @@ To run them yourself you need `curl`, `jq`, `gzip` and `git`:
 ./scripts/archive.sh
 ./scripts/index.sh
 ```
+
+Neither commits anything: only the workflow does.
+
+## Changing the scripts
+
+Changes go through a pull request. `./scripts/check.sh`, which needs Docker,
+lints the scripts and the workflows and checks that the list of snapshots is
+rebuilt as committed; CI runs it on every pull request.
+[AGENTS.md](AGENTS.md) says how to try a change without archiving anything,
+and what must never be done here: the history of `main` is never rewritten,
+and a file attached to a release is never replaced.
 
 ## Source and terms
 
