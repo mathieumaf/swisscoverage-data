@@ -6,10 +6,11 @@
 #   stations.ndjson  one site per line, keys and lines sorted, so that two days
 #                    differ only where the data differs
 #   metadata.json    where the file came from, when it was published, its
-#                    checksum and its size
+#                    checksum, its size, and where the original is kept
 #
 # Set RAW_DIR to also keep the original file, gzipped, in that directory.
 # Does nothing when the published file is the one already archived.
+# scripts/index.sh then lists every snapshot in snapshots.ndjson.
 #
 # Needs curl, jq and gzip. Commits nothing: the workflow does that.
 
@@ -59,7 +60,7 @@ data_date="$(jq -r '.[0].data_date' "$work/assets.json")"
 # Everything below comes from the network: check its shape before using it.
 [[ "$href" =~ ^https://data\.geo\.admin\.ch/[A-Za-z0-9._/-]+\.json$ ]] ||
   fail "unexpected download address: $href"
-[[ "$updated" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$ ]] ||
+[[ "$updated" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,6})?Z$ ]] ||
   fail "unexpected publication time: $updated"
 [[ "$data_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$ ]] ||
   fail "unexpected data date: $data_date"
@@ -68,6 +69,13 @@ data_date="$(jq -r '.[0].data_date' "$work/assets.json")"
   fail "unexpected checksum format: $checksum"
 expected_sha="${checksum#1220}"
 published="${updated%%T*}"
+
+# The original is kept under a name that holds the time as well as the day, so
+# that two files published on the same day never replace each other.
+time_of_day="${updated#*T}"
+time_of_day="${time_of_day%%[.Z]*}"
+release="raw-${published%%-*}"
+raw_name="mobile-stations_${published}T${time_of_day//:/}Z.json.gz"
 
 previous_sha=""
 previous_count=0
@@ -97,6 +105,7 @@ jq -S -n \
   --arg collection "$collection" --arg href "$href" \
   --arg published "$updated" --arg data_date "$data_date" \
   --arg sha256 "$actual_sha" --argjson sites "$sites" \
+  --arg release "$release" --arg raw_name "$raw_name" \
   --slurpfile raw <(jq 'del(.features)' "$work/raw.json") \
   '{
     source: {
@@ -109,16 +118,18 @@ jq -S -n \
     data_date: $data_date,
     sha256: $sha256,
     sites: $sites,
+    original: {release: $release, file: $raw_name},
     header: $raw[0]
   }' >"$out_dir/metadata.json"
 
 if [ -n "${RAW_DIR:-}" ]; then
   mkdir -p "$RAW_DIR"
-  gzip -9 -c "$work/raw.json" >"$RAW_DIR/mobile-stations_${published}.json.gz"
-  output raw_file "$RAW_DIR/mobile-stations_${published}.json.gz"
+  gzip -9 -c "$work/raw.json" >"$RAW_DIR/$raw_name"
+  output raw_file "$RAW_DIR/$raw_name"
 fi
 
 output changed true
 output published "$published"
+output release "$release"
 output sites "$sites"
 output previous_sites "$previous_count"

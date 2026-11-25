@@ -17,7 +17,9 @@ The project is independent: it is not affiliated with OFCOM or any operator.
 ofcom/mobile-stations/
   stations.ndjson   The current file: one site per line
   metadata.json     Its source, publication time, checksum and number of sites
-scripts/archive.sh  The script that produces both
+  snapshots.ndjson  The list of every version archived, oldest first
+scripts/archive.sh  The script that produces the first two
+scripts/index.sh    The script that produces the list
 ```
 
 **One commit is one published version.** The history of `stations.ndjson` is
@@ -38,20 +40,40 @@ sorted, lines sorted. That way two days differ only where the data differs.
 named `raw-<year>`. `metadata.json` records the SHA-256 of the original, which
 the script checks against OFCOM's catalogue before archiving.
 
+**`snapshots.ndjson` lists every version**, one JSON object per line: when
+OFCOM published it, the SHA-256 of the original, its number of sites, and the
+release and file name under which the original is kept. It is what a program
+reads to load the whole history without walking through git:
+
+```json
+{"published":"2026-11-24T22:01:55.936174Z","sha256":"c23c52e2…","sites":22761,"release":"raw-2026","file":"mobile-stations_2026-11-24.json.gz"}
+```
+
+The original of that line is at
+`https://github.com/mathieumaf/swisscoverage-data/releases/download/raw-2026/mobile-stations_2026-11-24.json.gz`.
+Originals are named after their publication day, and after the day and time
+from the third one on.
+
 The archive starts on 23 November 2026. Earlier versions were not kept by
 anyone we know of.
 
 ## How it works
 
-A scheduled workflow runs `scripts/archive.sh` once a day. The script asks
-OFCOM's catalogue which file is published, downloads it once, verifies its
-checksum, and rewrites it. When the published file is the one already
-archived, nothing is committed.
+A scheduled workflow runs `scripts/archive.sh` three times a day. The script
+asks OFCOM's catalogue which file is published, downloads it once, verifies
+its checksum, and rewrites it. When the published file is the one already
+archived, nothing is committed. OFCOM publishes once a day; the other runs are
+there because scheduled runs can start hours late, and a file replaced before
+it was archived is lost.
 
-To run it yourself you need `curl`, `jq` and `gzip`:
+`scripts/index.sh` then rebuilds `snapshots.ndjson` from the history of
+`metadata.json`, so the list cannot drift from what was archived.
+
+To run them yourself you need `curl`, `jq`, `gzip` and `git`:
 
 ```sh
 ./scripts/archive.sh
+./scripts/index.sh
 ```
 
 ## Source and terms
