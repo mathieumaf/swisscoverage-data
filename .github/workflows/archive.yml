@@ -1,11 +1,14 @@
 name: Archive
 
-# Once a day, keep the file of mobile phone base stations that OFCOM publishes.
+# Keep the file of mobile phone base stations that OFCOM publishes.
 # OFCOM replaces its file every evening, around 22:00 UTC, and keeps no history.
 
 on:
+  # Three times a day. GitHub starts scheduled runs late, by hours at times,
+  # and a file that is replaced before a run reaches it is lost for good. A
+  # run that finds the file already archived does nothing.
   schedule:
-    - cron: "17 4 * * *"
+    - cron: "17 4,10,16 * * *"
   workflow_dispatch:
 
 # One run at a time: two runs would try to push the same snapshot.
@@ -24,6 +27,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The list of snapshots is rebuilt from the whole history.
+          fetch-depth: 0
 
       - name: Fetch and rewrite the published file
         id: fetch
@@ -32,37 +38,80 @@ jobs:
         run: ./scripts/archive.sh
 
       # The original goes to a release, one per year, so the git history only
-      # holds the comparable form.
+      # holds the comparable form. An original is never replaced: when one of
+      # the same name is there, left by a run that failed after its upload, it
+      # must hold the same file.
       - name: Keep the original file
         if: steps.fetch.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           RAW_FILE: ${{ steps.fetch.outputs.raw_file }}
-          PUBLISHED: ${{ steps.fetch.outputs.published }}
+          RELEASE: ${{ steps.fetch.outputs.release }}
+          EXISTING_DIR: ${{ runner.temp }}/existing
         run: |
-          year="${PUBLISHED%%-*}"
-          release="raw-${year}"
-          gh release view "$release" >/dev/null 2>&1 ||
-            gh release create "$release" --title "Original files, ${year}" \
-              --notes "The files exactly as OFCOM published them, gzipped, one per publication day. Source: Federal Office of Communications OFCOM."
-          gh release upload "$release" "$RAW_FILE" --clobber
+          year="${RELEASE#raw-}"
+          gh release view "$RELEASE" >/dev/null 2>&1 ||
+            gh release create "$RELEASE" --title "Original files, ${year}" \
+              --notes "The files exactly as OFCOM published them, gzipped, one per publication. Source: Federal Office of Communications OFCOM."
+          name="$(basename "$RAW_FILE")"
+          if gh release download "$RELEASE" --pattern "$name" --dir "$EXISTING_DIR" 2>/dev/null; then
+            # Each on its own line: a file that does not decompress cleanly
+            # stops the step here, instead of being compared.
+            existing_sum="$(gunzip -c "$EXISTING_DIR/$name" | sha256sum)"
+            new_sum="$(gunzip -c "$RAW_FILE" | sha256sum)"
+            if [ "$existing_sum" = "$new_sum" ]; then
+              echo "$name is already in $RELEASE, with the same content."
+            else
+              echo "::error::$name is already in $RELEASE with another content. Nothing was replaced."
+              exit 1
+            fi
+          else
+            # Without --clobber: this fails if the file turns out to be there.
+            gh release upload "$RELEASE" "$RAW_FILE"
+          fi
 
-      - name: Commit the snapshot
-        if: steps.fetch.outputs.changed == 'true'
+      # A failure here must not keep a snapshot from being committed: the
+      # list can be rebuilt at any time, a snapshot cannot be fetched again.
+      # The run is failed at the end instead.
+      - name: List the snapshots
+        id: index
+        continue-on-error: true
+        run: ./scripts/index.sh
+
+      # Commits a new snapshot with its line in the list, or the list alone
+      # when it was missing a snapshot archived earlier.
+      - name: Commit
+        id: commit
         env:
+          CHANGED: ${{ steps.fetch.outputs.changed }}
           PUBLISHED: ${{ steps.fetch.outputs.published }}
           SITES: ${{ steps.fetch.outputs.sites }}
         run: |
+          git add ofcom
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+            exit 0
+          fi
+          if [ "$CHANGED" = "true" ]; then
+            message="data: mobile stations published ${PUBLISHED} (${SITES} sites)"
+          else
+            message="data: complete the list of snapshots"
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ofcom
-          git commit -m "data: mobile stations published ${PUBLISHED} (${SITES} sites)"
+          git commit -m "$message"
           git push
 
+      - name: Flag a list that could not be built
+        if: ${{ !cancelled() && steps.index.outcome == 'failure' }}
+        run: |
+          echo "::error::scripts/index.sh failed: the list of snapshots was not updated."
+          exit 1
+
       # The snapshot is archived whatever it contains. A sudden drop still
-      # deserves a look, so it fails the run after the commit.
+      # deserves a look, so it fails the run once the commit is made.
       - name: Flag a suspicious drop
-        if: steps.fetch.outputs.changed == 'true'
+        if: ${{ !cancelled() && steps.commit.outcome == 'success' && steps.fetch.outputs.changed == 'true' }}
         env:
           SITES: ${{ steps.fetch.outputs.sites }}
           PREVIOUS: ${{ steps.fetch.outputs.previous_sites }}
