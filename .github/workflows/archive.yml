@@ -55,7 +55,11 @@ jobs:
               --notes "The files exactly as OFCOM published them, gzipped, one per publication. Source: Federal Office of Communications OFCOM."
           name="$(basename "$RAW_FILE")"
           if gh release download "$RELEASE" --pattern "$name" --dir "$EXISTING_DIR" 2>/dev/null; then
-            if [ "$(gunzip -c "$EXISTING_DIR/$name" | sha256sum)" = "$(gunzip -c "$RAW_FILE" | sha256sum)" ]; then
+            # Each on its own line: a file that does not decompress cleanly
+            # stops the step here, instead of being compared.
+            existing_sum="$(gunzip -c "$EXISTING_DIR/$name" | sha256sum)"
+            new_sum="$(gunzip -c "$RAW_FILE" | sha256sum)"
+            if [ "$existing_sum" = "$new_sum" ]; then
               echo "$name is already in $RELEASE, with the same content."
             else
               echo "::error::$name is already in $RELEASE with another content. Nothing was replaced."
