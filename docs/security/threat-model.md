@@ -20,8 +20,11 @@ three times a day. Each run:
 4. rebuilds the list of snapshots from the history (`scripts/index.sh`);
 5. commits to `main` and pushes, with the workflow's own token.
 
-A second workflow (`.github/workflows/ci.yml`) lints the scripts and the
-workflows on pull requests, with a read-only token.
+A second workflow (`.github/workflows/ci.yml`) runs `scripts/check.sh` on
+pull requests and on pushes to `main`, with a read-only token and no secret:
+it lints the scripts and the workflows, and runs `scripts/index.sh` to check
+that the list of snapshots is rebuilt as committed. On a pull request, those
+scripts are the pull request's own.
 
 There is no server, no database, no account and no secret beyond the token
 GitHub gives each run. The repository is public.

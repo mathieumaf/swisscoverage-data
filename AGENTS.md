@@ -59,6 +59,10 @@ The workflow itself cannot be run from a pull request. A change to
 `archive.yml` is proved by reading it, by `./scripts/check.sh`, and by its
 first run on `main` after the merge, which the maintainer can start by hand.
 
+A pull request from a fork is proved by its CI run and by reading it. Its
+scripts are someone else's code: do not run them on a machine that holds
+credentials.
+
 Off limits:
 
 - Rewriting the history of `main`: `git push --force`, a rebase, a filter, a
@@ -95,8 +99,10 @@ Flag a change when:
 - **It trusts the network, or widens the token.** A value from OFCOM's
   catalogue reaches a path, a command or a step output before its shape is
   checked. A `${{ }}` expression is written inside a `run:` script instead of
-  passed through `env:`. The workflow gains a trigger, a permission beyond
-  `contents: write`, or an action that is not pinned to a commit.
+  passed through `env:`. The archive workflow gains a trigger other than its
+  schedule and the manual one, or a permission beyond `contents: write`. The
+  workflow that checks pull requests gains anything beyond `contents: read`,
+  or a secret. An action is not pinned to a commit, or an image to a digest.
 
 Skip `LICENSE`. Do not review the lines of
 `ofcom/mobile-stations/stations.ndjson`: check instead that the file only
@@ -110,8 +116,8 @@ When paths overlap, the higher tier wins.
 
 **High**
 
-- `.github/workflows/**`, `.github/dependabot.yml`: what runs with a token
-  that can write to this repository.
+- `.github/workflows/**`, `.github/dependabot.yml`: what runs here, one of
+  them with a token that can write to this repository.
 - `scripts/**`: what decides whether a day is archived, and in which form.
 - `ofcom/**`: the data. It changes through the workflow, not by hand.
 - `AGENTS.md`, `CLAUDE.md`, `SECURITY.md`, `docs/security/**`: they steer

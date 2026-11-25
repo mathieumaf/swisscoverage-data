@@ -2,7 +2,8 @@
 
 This repository is the data archive of
 [swisscoverage](https://github.com/mathieumaf/swisscoverage). It holds public
-data, two scripts and one workflow. What it protects is the archive itself:
+data, a few scripts, and two workflows: the one that archives, and the one
+that checks pull requests. What it protects is the archive itself:
 [docs/security/threat-model.md](docs/security/threat-model.md) says from whom
 and where. The policy of the whole project is
 [swisscoverage's SECURITY.md](https://github.com/mathieumaf/swisscoverage/blob/main/SECURITY.md).
@@ -33,11 +34,14 @@ A vulnerability here is a way for someone who should not be able to:
    and the script stops when the catalogue gives another file at a publication
    time that is not later than the one archived.
 3. **Nothing is archived unchecked.** The file's SHA-256 must be the one of
-   OFCOM's catalogue, and every value taken from the network is matched
-   against a pattern before it is used.
-4. **The workflow's token writes to this repository only**, and the workflow
-   starts on a schedule or by hand, never from a pull request.
-5. **Actions are pinned to a commit.**
+   OFCOM's catalogue. Each value read from the catalogue is matched against a
+   pattern before it is used, and the content of the file is only ever
+   handled as data.
+4. **Only the archive workflow can write**, to this repository alone, and it
+   starts on a schedule or by hand, never from a pull request. The workflow
+   that checks pull requests has a read-only token and no secret.
+5. **Actions are pinned to a commit**, and the images of the linters to a
+   digest.
 
 ## Not a vulnerability
 

@@ -7,8 +7,9 @@
 #   the list        scripts/index.sh must rebuild snapshots.ndjson as committed
 #
 # Needs docker, git and jq. The two linters run from images pinned to a
-# digest, so that a change is checked by the same version everywhere. To
-# update one, replace its digest and the version beside it.
+# digest, so that a change is checked by the same version everywhere, and
+# without network: they only read the repository. To update one, replace its
+# digest and the version beside it.
 
 set -euo pipefail
 
@@ -18,10 +19,11 @@ actionlint_image="rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d352068
 cd "$(dirname "$0")/.."
 
 echo "shellcheck"
-docker run --rm -v "$PWD:/repo:ro" -w /repo "$shellcheck_image" scripts/archive.sh scripts/index.sh scripts/check.sh
+docker run --rm --network none -v "$PWD:/repo:ro" -w /repo "$shellcheck_image" \
+  scripts/archive.sh scripts/index.sh scripts/check.sh
 
 echo "actionlint"
-docker run --rm -v "$PWD:/repo:ro" -w /repo "$actionlint_image" -color=false
+docker run --rm --network none -v "$PWD:/repo:ro" -w /repo "$actionlint_image" -color=false
 
 echo "the list of snapshots"
 ./scripts/index.sh >/dev/null
