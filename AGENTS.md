@@ -86,9 +86,10 @@ Off limits:
   the list then names a file that does not exist, and every import stops.
   `snapshots.ndjson` changes in a pull request only as what `index.sh`
   rebuilds, when the pull request changes `index.sh`.
-- Starting the archive workflow from a branch other than `main`. Its job is
-  skipped there, by a condition that must stay: without it, the run would
-  upload to the real release.
+- Starting the archive workflow from a branch other than `main`. GitHub runs
+  the workflow as it is on the chosen branch. A condition now keeps the job
+  to `main`, but a branch cut before it existed, or one that removed it,
+  would upload to the real release and push to itself.
 - Running `archive.sh` in a loop, or pointing it at anything but OFCOM's
   catalogue.
 
