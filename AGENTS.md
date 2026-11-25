@@ -87,9 +87,9 @@ Off limits:
   `snapshots.ndjson` changes in a pull request only as what `index.sh`
   rebuilds, when the pull request changes `index.sh`.
 - Starting the archive workflow from a branch other than `main`. GitHub runs
-  the workflow as it is on the chosen branch. A condition now keeps the job
-  to `main`, but a branch cut before it existed, or one that removed it,
-  would upload to the real release and push to itself.
+  the workflow as it is on the chosen branch. A condition and a first step
+  now keep the job to `main`, but a branch cut before they existed, or one
+  that removed both, can upload to the real release and push to itself.
 - Running `archive.sh` in a loop, or pointing it at anything but OFCOM's
   catalogue.
 
