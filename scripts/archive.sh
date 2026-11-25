@@ -91,17 +91,13 @@ if [ "$expected_sha" = "$previous_sha" ]; then
   exit 0
 fi
 
-# A new file must be published later than the one archived. Another file at
-# the same time, or at an earlier one, would take the place of an original
-# that is already kept, or of its line in the list: stop and let a person
-# look. Times are compared as text once their fractions have the same length.
-if [ -n "$previous_updated" ]; then
-  later="$(jq -n --arg new "$updated" --arg old "$previous_updated" '
-    def key: capture("^(?<second>[^.Z]+)(\\.(?<fraction>[0-9]+))?Z") |
-      .second + "." + (((.fraction // "") + "000000000")[0:9]);
-    ($new | key) > ($old | key)')"
-  [ "$later" = "true" ] ||
-    fail "the catalogue gives another file published at $updated, which is not later than the one archived ($previous_updated); nothing was replaced"
+# A new file must be published at a later second than the one archived.
+# Another file at the same time, or at an earlier one, would take the place of
+# an original that is already kept, whose name holds its second, or of its
+# line in the list: stop and let a person look. Cut at the second, the two
+# times have the same shape and compare as text.
+if [ -n "$previous_updated" ] && [[ ! "${updated%%[.Z]*}" > "${previous_updated%%[.Z]*}" ]]; then
+  fail "the catalogue gives another file published at $updated, which is not later than the one archived ($previous_updated); nothing was replaced"
 fi
 
 # 2. Download the file and check it is the one the catalogue describes.
