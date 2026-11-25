@@ -52,7 +52,12 @@ jobs:
               --notes "The files exactly as OFCOM published them, gzipped, one per publication. Source: Federal Office of Communications OFCOM."
           gh release upload "$RELEASE" "$RAW_FILE" --clobber
 
+      # A failure here must not keep a snapshot from being committed: the
+      # list can be rebuilt at any time, a snapshot cannot be fetched again.
+      # The run is failed at the end instead.
       - name: List the snapshots
+        id: index
+        continue-on-error: true
         run: ./scripts/index.sh
 
       # Commits a new snapshot with its line in the list, or the list alone
@@ -78,10 +83,16 @@ jobs:
           git commit -m "$message"
           git push
 
+      - name: Flag a list that could not be built
+        if: steps.index.outcome == 'failure'
+        run: |
+          echo "::error::scripts/index.sh failed. The snapshot is archived; the list of snapshots was not updated."
+          exit 1
+
       # The snapshot is archived whatever it contains. A sudden drop still
       # deserves a look, so it fails the run after the commit.
       - name: Flag a suspicious drop
-        if: steps.fetch.outputs.changed == 'true'
+        if: ${{ !cancelled() && steps.fetch.outputs.changed == 'true' }}
         env:
           SITES: ${{ steps.fetch.outputs.sites }}
           PREVIOUS: ${{ steps.fetch.outputs.previous_sites }}

@@ -43,7 +43,10 @@ line='{
   file: (.original.file // ("mobile-stations_" + .published[0:10] + ".json.gz"))
 }'
 
-for commit in $(git log --reverse --format=%H -- "$out_dir/metadata.json"); do
+# On its own line, so that a failure of git stops the script. Inside the
+# loop's list it would not, and the list would be rebuilt from nothing.
+commits="$(git log --reverse --format=%H -- "$out_dir/metadata.json")"
+for commit in $commits; do
   git show "$commit:$out_dir/metadata.json" | jq -c "$line" >>"$work/lines.ndjson"
 done
 if [ -f "$out_dir/metadata.json" ]; then
@@ -51,18 +54,24 @@ if [ -f "$out_dir/metadata.json" ]; then
 fi
 [ -s "$work/lines.ndjson" ] || fail "no snapshot found"
 
-# One line per publication time. Should metadata.json ever be corrected, the
-# latest version of a snapshot's line wins.
-jq -cs 'group_by(.published) | map(last) | sort_by(.published) | .[]' \
+# One line per publication time, oldest first. Should metadata.json ever be
+# corrected, the latest version of a snapshot's line wins. Times are sorted as
+# text once their fractions have the same length: as published, "35.5Z" would
+# come before "35Z".
+jq -cs '
+  def key: capture("^(?<second>[^.Z]+)(\\.(?<fraction>[0-9]+))?Z") |
+    .second + "." + (((.fraction // "") + "000000000")[0:9]);
+  group_by(.published) | map(last) | sort_by(.published | key) | .[]' \
   "$work/lines.ndjson" >"$work/index.ndjson"
 
-# Whatever reads the list relies on these.
+# Whatever reads the list relies on these. \z is the end of the value: $ would
+# also accept a line break before it.
 jq -e -s 'all(.[];
-    (.published | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?Z$"))
-    and (.sha256 | test("^[0-9a-f]{64}$"))
+    (.published | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z\\z"))
+    and (.sha256 | test("^[0-9a-f]{64}\\z"))
     and (.sites | type == "number")
-    and (.release | test("^raw-[0-9]{4}$"))
-    and (.file | test("^mobile-stations_[0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{6}Z)?\\.json\\.gz$")))' \
+    and (.release | test("^raw-[0-9]{4}\\z"))
+    and (.file | test("^mobile-stations_[0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{6}Z)?\\.json\\.gz\\z")))' \
   "$work/index.ndjson" >/dev/null || fail "a line of the list has an unexpected value"
 
 mv "$work/index.ndjson" "$index"

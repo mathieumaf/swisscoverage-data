@@ -51,8 +51,9 @@ reads to load the whole history without walking through git:
 
 The original of that line is at
 `https://github.com/mathieumaf/swisscoverage-data/releases/download/raw-2026/mobile-stations_2026-11-24.json.gz`.
-Originals are named after their publication day, and after the day and time
-from the third one on.
+The first originals are named after their publication day alone. Since the
+list exists, an original is named after its day and time, and the list always
+gives the name to use.
 
 The archive starts on 23 November 2026. Earlier versions were not kept by
 anyone we know of.
