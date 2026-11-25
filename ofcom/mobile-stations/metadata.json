@@ -1,5 +1,5 @@
 {
-  "data_date": "2026-11-22T00:00:00Z",
+  "data_date": "2026-11-23T00:00:00Z",
   "header": {
     "crs": {
       "properties": {
@@ -10,9 +10,9 @@
     "name": "ch.bakom.mobil-antennenstandorte",
     "type": "FeatureCollection"
   },
-  "published": "2026-11-23T22:01:35.611529Z",
-  "sha256": "f57bc656c5fe7885895f16cb4a7369ae1b8480520d5078b9c253f0122aeda6cc",
-  "sites": 22777,
+  "published": "2026-11-24T22:01:55.936174Z",
+  "sha256": "c23c52e27c91e37562e9c8ad190537ef305a7daadb7b5ac72f5a6fe7d9d5663a",
+  "sites": 22761,
   "source": {
     "collection": "ch.bakom.standorte-mobilfunkanlagen",
     "href": "https://data.geo.admin.ch/ch.bakom.standorte-mobilfunkanlagen/standorte-mobilfunkanlagen/standorte-mobilfunkanlagen_2056.json",
