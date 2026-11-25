@@ -24,16 +24,20 @@ docker run --rm --network none -v "$PWD:/repo:ro" -w /repo "$shellcheck_image" s
 echo "actionlint"
 docker run --rm --network none -v "$PWD:/repo:ro" -w /repo "$actionlint_image" -color=false
 
-# Against the last commit, not the working tree: a list that was deleted, or
-# rebuilt and left uncommitted, must not pass.
+# Against the last commit, not the working tree: a list that was deleted,
+# replaced by something that is not a file, or rebuilt and left uncommitted,
+# must not pass. This rebuilds the list in the working tree, over any local
+# change to it.
 echo "the list of snapshots"
 list="ofcom/mobile-stations/snapshots.ndjson"
-if ! git cat-file -e "HEAD:$list" 2>/dev/null; then
-  echo "error: $list is not in the last commit" >&2
+if [ "$(git cat-file -t "HEAD:$list" 2>/dev/null)" != "blob" ]; then
+  echo "error: $list is not a file of the last commit" >&2
   exit 1
 fi
 ./scripts/index.sh >/dev/null
-if ! git diff --exit-code HEAD -- "$list"; then
+# The first shows a difference in the file; the second also catches anything
+# untracked at that path.
+if ! git diff --exit-code HEAD -- "$list" || [ -n "$(git status --porcelain -- "$list")" ]; then
   echo "error: scripts/index.sh does not rebuild the list as committed (see the difference above)." >&2
   echo "The rebuilt list is in the working tree: 'git restore --staged --worktree $list' puts the committed one back." >&2
   exit 1

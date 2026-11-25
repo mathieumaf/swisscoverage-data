@@ -71,13 +71,13 @@ GitHub gives each run. The repository is public.
 1. **OFCOM → archive.** The file crosses from the network into the history.
    Enforced in `archive.sh`: checked address, checked checksum format,
    verified SHA-256, and no value of the catalogue interpolated into a command.
-2. **Fork → repository.** A pull request crosses when the maintainer merges
-   it. No rule requires a pull request on `main`, because the workflow itself
+2. **Fork → repository.** A pull request crosses when the maintainer merges it.
+   No rule requires a pull request on `main`, because the workflow itself
    pushes there every day: that every other change goes through a pull request
-   is a rule for people and agents, written in `AGENTS.md` under "Off limits". What rules do enforce is that `main` cannot
-   be force-pushed or deleted, and that `raw-*` tags cannot be moved or
-   deleted. Those are repository settings, not files: confirm they are in
-   place when it matters.
+   is a rule for people and agents, written in `AGENTS.md` under "Off limits".
+   What rules do enforce is that `main` cannot be force-pushed or deleted, and
+   that `raw-*` tags cannot be moved or deleted. Those are repository settings,
+   not files: confirm they are in place when it matters.
 3. **Workflow → release.** The original crosses when it is uploaded. Enforced
    in `archive.yml`: the upload does not overwrite, and a file of the same
    name must already hold the same content.
@@ -89,9 +89,9 @@ GitHub gives each run. The repository is public.
 - **No personal data, and no secret.** The data is public and describes
   infrastructure.
 - **Privileged actions.** Pushing to `main`, uploading to a release, changing
-  the workflows or the repository's settings, deleting a release. The first
-  two are done by the workflow when it archives a file; the others by the
-  maintainer.
+  the workflows or the repository's settings, deleting a release. The
+  workflow pushes to `main` when it has something to commit, and uploads to a
+  release when it archives a file; the others are done by the maintainer.
 
 ## Accepted risks and exclusions
 

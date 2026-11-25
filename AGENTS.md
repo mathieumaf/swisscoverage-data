@@ -29,9 +29,11 @@ history (`git rev-parse --is-shallow-repository` prints `false`).
 | -------------------- | ------------------------------------------------------------------------------------------- | --------------------------- |
 | `./scripts/check.sh` | the scripts and workflows pass their linters, and `index.sh` rebuilds the list as committed | prints `All checks passed.` |
 
-`check.sh` runs in the clone itself: it changes nothing when it passes.
-`archive.sh` writes into `ofcom/`, so try it in a copy, never in the clone
-you commit from. From an up-to-date clone:
+`check.sh` runs in the clone itself. It rebuilds `snapshots.ndjson` in the
+working tree, over any local change to that file; when it passes, what is
+there is the committed list. `archive.sh` writes into the rest of `ofcom/`,
+so try it in a copy, never in the clone you commit from. From an up-to-date
+clone:
 
 ```sh
 scratch="$(mktemp -d)"
