@@ -6,7 +6,8 @@
 #   stations.ndjson  one site per line, keys and lines sorted, so that two days
 #                    differ only where the data differs
 #   metadata.json    where the file came from, when it was published, its
-#                    checksum, its size, and where the original is kept
+#                    checksum, its number of sites, and where the original
+#                    is kept
 #
 # Set RAW_DIR to also keep the original file, gzipped, in that directory.
 # Does nothing when the published file is the one already archived.

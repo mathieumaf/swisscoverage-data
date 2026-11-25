@@ -20,9 +20,18 @@ permissions:
   # Commit the snapshot and attach the original file to a release.
   contents: write
 
+# Named, so that a step stops when any command of a pipeline fails. Left
+# unnamed, the shell only looks at the last one.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   archive:
     name: archive
+    # A run can be started by hand from any branch, and would then upload to
+    # the real release and push to that branch. Only main archives.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
