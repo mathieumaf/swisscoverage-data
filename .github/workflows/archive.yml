@@ -20,12 +20,30 @@ permissions:
   # Commit the snapshot and attach the original file to a release.
   contents: write
 
+# Named, so that a step stops when any command of a pipeline fails. Left
+# unnamed, the shell only looks at the last one.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   archive:
     name: archive
+    # A run can be started by hand from any branch, and would then upload to
+    # the real release and push to that branch. Only main archives.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      # The condition above compares without regard to case: a branch named
+      # Main would pass it. This one is exact.
+      - name: Only from main
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::The archive only runs from refs/heads/main, not from $GITHUB_REF."
+            exit 1
+          fi
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # The list of snapshots is rebuilt from the whole history.

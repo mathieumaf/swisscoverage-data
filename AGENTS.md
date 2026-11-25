@@ -86,8 +86,10 @@ Off limits:
   the list then names a file that does not exist, and every import stops.
   `snapshots.ndjson` changes in a pull request only as what `index.sh`
   rebuilds, when the pull request changes `index.sh`.
-- Starting the archive workflow from a branch other than `main`. It would
-  upload to the real release.
+- Starting the archive workflow from a branch other than `main`. GitHub runs
+  the workflow as it is on the chosen branch. A condition and a first step
+  now keep the job to `main`, but a branch cut before they existed, or one
+  that removed both, can upload to the real release and push to itself.
 - Running `archive.sh` in a loop, or pointing it at anything but OFCOM's
   catalogue.
 
@@ -119,7 +121,8 @@ Flag a change when:
   catalogue reaches a path, a command or a step output before its shape is
   checked. A `${{ }}` expression is written inside a `run:` script instead of
   passed through `env:`. The archive workflow gains a trigger other than its
-  schedule and the manual one, or a permission beyond `contents: write`. The
+  schedule and the manual one, a permission beyond `contents: write`, or
+  loses the condition that keeps its job to `main`. The
   workflow that checks pull requests gains anything beyond `contents: read`,
   or a secret. An action is not pinned to a commit, or an image to a digest.
 

@@ -6,7 +6,9 @@ including the program that reads this archive, is in the main repository:
 [swisscoverage, docs/security/threat-model.md](https://github.com/mathieumaf/swisscoverage/blob/main/docs/security/threat-model.md).
 
 Revisit this page when the workflow gains a trigger, a permission, a secret or
-a new place to write, and when another source is archived.
+a new place to write, when another source is archived, and before the default
+branch is ever renamed: the archive only runs from a branch named `main`, and
+a run that is skipped raises no alarm.
 
 ## System and scope
 
@@ -63,7 +65,7 @@ GitHub gives each run. The repository is public.
 | OFCOM's file             | A GeoJSON document of about 28 MB                            | Its SHA-256 must be the catalogue's. It is passed to `jq` as data and never evaluated                                                                 |
 | The repository's history | Every past `metadata.json`, read by `index.sh`               | Read with `git show` and passed to `jq` as data. Each line of the list is checked before the list is written                                          |
 | Pull requests from forks | Scripts, workflows                                           | CI runs on `pull_request` with `contents: read` and no secret. The archive workflow has no pull request trigger, so a fork's code never gets its token |
-| Manual runs              | `workflow_dispatch`, by someone with write access            | Runs the workflow of the chosen branch with the same token. Only `main` should be chosen                                                              |
+| Manual runs              | `workflow_dispatch`, by someone with write access            | GitHub runs the workflow as it is on the chosen branch, with the same token. The job has a condition that keeps it to `main`, which protects only the branches that carry it: starting a run from another branch stays off limits |
 | Dependabot               | Pull requests that update the pinned actions                 | Reviewed like any other change to a workflow                                                                                                          |
 
 ## Trust boundaries
