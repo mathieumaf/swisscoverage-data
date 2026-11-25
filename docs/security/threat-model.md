@@ -11,14 +11,19 @@ a new place to write, and when another source is archived.
 ## System and scope
 
 A scheduled GitHub Actions workflow (`.github/workflows/archive.yml`) runs
-three times a day. Each run:
+three times a day. Each run asks OFCOM's catalogue which file is published
+(`scripts/archive.sh`), then rebuilds the list of snapshots from the history
+(`scripts/index.sh`). What it writes depends on what it finds:
 
-1. asks OFCOM's catalogue which file is published (`scripts/archive.sh`);
-2. when it is not the one already archived, downloads it, verifies its SHA-256
-   against the catalogue, and rewrites it as one site per line;
-3. attaches the gzipped original to the release of the year;
-4. rebuilds the list of snapshots from the history (`scripts/index.sh`);
-5. commits to `main` and pushes, with the workflow's own token.
+- **A new file.** It downloads it, verifies its SHA-256 against the catalogue,
+  rewrites it as one site per line, attaches the gzipped original to the
+  release of the year, and commits the snapshot with its line in the list.
+- **The file already archived, and a complete list.** It writes nothing. This
+  is two runs out of three.
+- **The file already archived, and a list that lacks a snapshot.** It commits
+  the completed list alone.
+
+A commit is pushed to `main` with the workflow's own token.
 
 A second workflow (`.github/workflows/ci.yml`) runs `scripts/check.sh` on
 pull requests and on pushes to `main`, with a read-only token and no secret:
@@ -68,8 +73,8 @@ GitHub gives each run. The repository is public.
    verified SHA-256, and no value of the catalogue interpolated into a command.
 2. **Fork → repository.** A pull request crosses when the maintainer merges
    it. No rule requires a pull request on `main`, because the workflow itself
-   pushes there every day: pull requests are a convention for people and
-   agents, written in `AGENTS.md`. What rules do enforce is that `main` cannot
+   pushes there every day: that every other change goes through a pull request
+   is a rule for people and agents, written in `AGENTS.md` under "Off limits". What rules do enforce is that `main` cannot
    be force-pushed or deleted, and that `raw-*` tags cannot be moved or
    deleted. Those are repository settings, not files: confirm they are in
    place when it matters.
@@ -85,13 +90,17 @@ GitHub gives each run. The repository is public.
   infrastructure.
 - **Privileged actions.** Pushing to `main`, uploading to a release, changing
   the workflows or the repository's settings, deleting a release. The first
-  two are done by the workflow at each run; the others by the maintainer.
+  two are done by the workflow when it archives a file; the others by the
+  maintainer.
 
 ## Accepted risks and exclusions
 
-- **A release can be deleted by anyone with write access.** GitHub has no rule
-  against it that still lets the workflow add files to the release every day.
-  The maintainer's account is the only one with that access.
+- **A release can be deleted by anyone with write access.** The rules protect
+  the `raw-*` tags, not the files attached to the releases, and GitHub has no
+  rule for those that still lets the workflow add one every day. Two things
+  have that access: the maintainer's account, the only user with it, and the
+  archive workflow's token. The workflow's code must therefore never delete or
+  replace anything in a release, which review checks.
 - **A single maintainer.** A compromised maintainer account defeats every
   control here. Mitigated outside the repository, by account security.
 - **OFCOM's catalogue is the only witness.** The checksum proves the file is

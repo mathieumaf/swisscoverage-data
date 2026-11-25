@@ -64,9 +64,9 @@ anyone we know of.
 A scheduled workflow runs `scripts/archive.sh` three times a day. The script
 asks OFCOM's catalogue which file is published, downloads it once, verifies
 its checksum, and rewrites it. When the published file is the one already
-archived, nothing is committed. OFCOM publishes once a day; the other runs are
-there because scheduled runs can start hours late, and a file replaced before
-it was archived is lost.
+archived, no snapshot is committed. OFCOM publishes once a day; the other
+runs are there because scheduled runs can start hours late, and a file
+replaced before it was archived is lost.
 
 `scripts/index.sh` then rebuilds `snapshots.ndjson` from the history of
 `metadata.json`, so the list cannot drift from what was archived.

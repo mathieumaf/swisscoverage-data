@@ -19,16 +19,23 @@ actionlint_image="rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d352068
 cd "$(dirname "$0")/.."
 
 echo "shellcheck"
-docker run --rm --network none -v "$PWD:/repo:ro" -w /repo "$shellcheck_image" \
-  scripts/archive.sh scripts/index.sh scripts/check.sh
+docker run --rm --network none -v "$PWD:/repo:ro" -w /repo "$shellcheck_image" scripts/*.sh
 
 echo "actionlint"
 docker run --rm --network none -v "$PWD:/repo:ro" -w /repo "$actionlint_image" -color=false
 
+# Against the last commit, not the working tree: a list that was deleted, or
+# rebuilt and left uncommitted, must not pass.
 echo "the list of snapshots"
+list="ofcom/mobile-stations/snapshots.ndjson"
+if ! git cat-file -e "HEAD:$list" 2>/dev/null; then
+  echo "error: $list is not in the last commit" >&2
+  exit 1
+fi
 ./scripts/index.sh >/dev/null
-if ! git diff --exit-code -- ofcom/mobile-stations/snapshots.ndjson; then
-  echo "error: scripts/index.sh does not rebuild the committed list (see the difference above)" >&2
+if ! git diff --exit-code HEAD -- "$list"; then
+  echo "error: scripts/index.sh does not rebuild the list as committed (see the difference above)." >&2
+  echo "The rebuilt list is in the working tree: 'git restore --staged --worktree $list' puts the committed one back." >&2
   exit 1
 fi
 
