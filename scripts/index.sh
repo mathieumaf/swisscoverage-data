@@ -67,7 +67,7 @@ jq -cs '
 # Whatever reads the list relies on these. \z is the end of the value: $ would
 # also accept a line break before it.
 jq -e -s 'all(.[];
-    (.published | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z\\z"))
+    (.published | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z\\z"))
     and (.sha256 | test("^[0-9a-f]{64}\\z"))
     and (.sites | type == "number")
     and (.release | test("^raw-[0-9]{4}\\z"))

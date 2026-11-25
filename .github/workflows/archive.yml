@@ -38,19 +38,33 @@ jobs:
         run: ./scripts/archive.sh
 
       # The original goes to a release, one per year, so the git history only
-      # holds the comparable form.
+      # holds the comparable form. An original is never replaced: when one of
+      # the same name is there, left by a run that failed after its upload, it
+      # must hold the same file.
       - name: Keep the original file
         if: steps.fetch.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           RAW_FILE: ${{ steps.fetch.outputs.raw_file }}
           RELEASE: ${{ steps.fetch.outputs.release }}
+          EXISTING_DIR: ${{ runner.temp }}/existing
         run: |
           year="${RELEASE#raw-}"
           gh release view "$RELEASE" >/dev/null 2>&1 ||
             gh release create "$RELEASE" --title "Original files, ${year}" \
               --notes "The files exactly as OFCOM published them, gzipped, one per publication. Source: Federal Office of Communications OFCOM."
-          gh release upload "$RELEASE" "$RAW_FILE" --clobber
+          name="$(basename "$RAW_FILE")"
+          if gh release download "$RELEASE" --pattern "$name" --dir "$EXISTING_DIR" 2>/dev/null; then
+            if [ "$(gunzip -c "$EXISTING_DIR/$name" | sha256sum)" = "$(gunzip -c "$RAW_FILE" | sha256sum)" ]; then
+              echo "$name is already in $RELEASE, with the same content."
+            else
+              echo "::error::$name is already in $RELEASE with another content. Nothing was replaced."
+              exit 1
+            fi
+          else
+            # Without --clobber: this fails if the file turns out to be there.
+            gh release upload "$RELEASE" "$RAW_FILE"
+          fi
 
       # A failure here must not keep a snapshot from being committed: the
       # list can be rebuilt at any time, a snapshot cannot be fetched again.
@@ -63,6 +77,7 @@ jobs:
       # Commits a new snapshot with its line in the list, or the list alone
       # when it was missing a snapshot archived earlier.
       - name: Commit
+        id: commit
         env:
           CHANGED: ${{ steps.fetch.outputs.changed }}
           PUBLISHED: ${{ steps.fetch.outputs.published }}
@@ -84,15 +99,15 @@ jobs:
           git push
 
       - name: Flag a list that could not be built
-        if: steps.index.outcome == 'failure'
+        if: ${{ !cancelled() && steps.index.outcome == 'failure' }}
         run: |
-          echo "::error::scripts/index.sh failed. The snapshot is archived; the list of snapshots was not updated."
+          echo "::error::scripts/index.sh failed: the list of snapshots was not updated."
           exit 1
 
       # The snapshot is archived whatever it contains. A sudden drop still
-      # deserves a look, so it fails the run after the commit.
+      # deserves a look, so it fails the run once the commit is made.
       - name: Flag a suspicious drop
-        if: ${{ !cancelled() && steps.fetch.outputs.changed == 'true' }}
+        if: ${{ !cancelled() && steps.commit.outcome == 'success' && steps.fetch.outputs.changed == 'true' }}
         env:
           SITES: ${{ steps.fetch.outputs.sites }}
           PREVIOUS: ${{ steps.fetch.outputs.previous_sites }}
