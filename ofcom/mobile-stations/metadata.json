@@ -1,5 +1,5 @@
 {
-  "data_date": "2026-11-23T00:00:00Z",
+  "data_date": "2026-11-25T00:00:00Z",
   "header": {
     "crs": {
       "properties": {
@@ -10,8 +10,12 @@
     "name": "ch.bakom.mobil-antennenstandorte",
     "type": "FeatureCollection"
   },
-  "published": "2026-11-24T22:01:55.936174Z",
-  "sha256": "c23c52e27c91e37562e9c8ad190537ef305a7daadb7b5ac72f5a6fe7d9d5663a",
+  "original": {
+    "file": "mobile-stations_2026-11-25T220206Z.json.gz",
+    "release": "raw-2026"
+  },
+  "published": "2026-11-25T22:02:06.863775Z",
+  "sha256": "ec92bf44f881f049c4f1247f3e3e7d77b7d73486565bf798bf608e5c520f187f",
   "sites": 22761,
   "source": {
     "collection": "ch.bakom.standorte-mobilfunkanlagen",
