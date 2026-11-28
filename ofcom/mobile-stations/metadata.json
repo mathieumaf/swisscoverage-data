@@ -1,5 +1,5 @@
 {
-  "data_date": "2026-11-26T00:00:00Z",
+  "data_date": "2026-11-27T00:00:00Z",
   "header": {
     "crs": {
       "properties": {
@@ -11,11 +11,11 @@
     "type": "FeatureCollection"
   },
   "original": {
-    "file": "mobile-stations_2026-11-26T220150Z.json.gz",
+    "file": "mobile-stations_2026-11-27T220156Z.json.gz",
     "release": "raw-2026"
   },
-  "published": "2026-11-26T22:01:50.588955Z",
-  "sha256": "2a8f004a9a19740977b3cddfc770d3ba11a603ea2c89407fc8b9f32e0e868ba9",
+  "published": "2026-11-27T22:01:56.916634Z",
+  "sha256": "2bb6ea4e8d6ef0a75a65b5ec8e5fd3517e1c390f2db6b94c6974d0be56245201",
   "sites": 22761,
   "source": {
     "collection": "ch.bakom.standorte-mobilfunkanlagen",
